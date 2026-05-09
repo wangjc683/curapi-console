@@ -29,6 +29,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
+  Check,
+  ChevronsUpDown,
   HelpCircle,
   Loader2,
   Sparkles,
@@ -63,7 +65,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Combobox } from '@/components/ui/combobox'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import {
   Form,
   FormControl,
@@ -74,6 +83,11 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -265,6 +279,109 @@ function formatUnixTime(timestamp: unknown): string {
   const seconds = Number(timestamp)
   if (!Number.isFinite(seconds) || seconds <= 0) return '-'
   return new Date(seconds * 1000).toLocaleString()
+}
+
+// Curapi customization: replaces the broken `<Combobox options={...}>` (legacy
+// ComboboxInput) which renders the raw numeric value (e.g., "1") in the input
+// after selection instead of the matching option's label (e.g., "OpenAI").
+// Uses the same Popover + Command pattern as ApiKeyGroupCombobox — selected
+// label is the source of truth in the trigger; values stay numeric in form
+// state via parent's onValueChange.
+type ChannelTypeOption = {
+  value: string
+  label: string
+  icon?: ReactNode
+}
+
+function ChannelTypeCombobox({
+  options,
+  value,
+  onValueChange,
+  placeholder,
+}: {
+  options: ChannelTypeOption[]
+  value: string
+  onValueChange: (value: string) => void
+  placeholder?: string
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
+  const selected = options.find((option) => option.value === value)
+
+  const filteredOptions = useMemo(() => {
+    const search = searchValue.trim().toLowerCase()
+    if (!search) return options
+    return options.filter(
+      (option) =>
+        option.label.toLowerCase().includes(search) ||
+        option.value.toLowerCase().includes(search)
+    )
+  }, [options, searchValue])
+
+  const handleSelect = (selectedValue: string) => {
+    onValueChange(selectedValue)
+    setOpen(false)
+    setSearchValue('')
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            type='button'
+            variant='outline'
+            role='combobox'
+            aria-expanded={open}
+            className='w-full justify-between font-normal'
+          />
+        }
+      >
+        <span className='flex min-w-0 flex-1 items-center gap-2'>
+          {selected?.icon}
+          <span className='truncate'>
+            {selected?.label || placeholder || t('Select channel type')}
+          </span>
+        </span>
+        <ChevronsUpDown className='h-4 w-4 shrink-0 opacity-50' />
+      </PopoverTrigger>
+      <PopoverContent
+        className='w-[var(--anchor-width)] p-0'
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={t('Search channel type...')}
+            value={searchValue}
+            onValueChange={setSearchValue}
+          />
+          <CommandList className='max-h-[320px]'>
+            <CommandEmpty>{t('No channel type found.')}</CommandEmpty>
+            <CommandGroup>
+              {filteredOptions.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={handleSelect}
+                  className='gap-2'
+                >
+                  <Check
+                    className={cn(
+                      'h-4 w-4 shrink-0',
+                      value === option.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  {option.icon}
+                  <span className='truncate'>{option.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 function CardHeading({ title, icon }: { title: string; icon?: ReactNode }) {
@@ -1162,7 +1279,7 @@ export function ChannelMutateDrawer({
                       <FormItem>
                         <FormLabel>{t('Type *')}</FormLabel>
                         <FormControl>
-                          <Combobox
+                          <ChannelTypeCombobox
                             options={channelTypeOptions}
                             value={String(field.value)}
                             onValueChange={(value) => {
@@ -1172,9 +1289,6 @@ export function ChannelMutateDrawer({
                               }
                             }}
                             placeholder={t('Select channel type')}
-                            searchPlaceholder={t('Search channel type...')}
-                            emptyText={t('No channel type found.')}
-                            allowCustomValue
                           />
                         </FormControl>
                         <FormMessage />

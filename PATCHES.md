@@ -20,6 +20,7 @@ what to keep / discard.
 | `web/default/src/components/layout/components/system-brand.tsx` | Hardcoded `[C] curapi` for both inline + sidebar variants; drops `useStatus`/`useSystemConfig`; hides version row | manual review |
 | `web/default/src/hooks/use-sidebar-data.ts` | Removes `chat` navGroup (Playground + Chat) | manual review |
 | `web/default/src/hooks/use-top-nav-links.ts` | Default modules disable rankings/docs/about; render branches for those three removed | manual review |
+| `web/default/src/features/channels/components/drawers/channel-mutate-drawer.tsx` | Replace broken legacy Combobox on `type` field with inline `ChannelTypeCombobox` (Popover + Command); shows label like "OpenAI" instead of raw "1" | manual review |
 | `web/default/src/styles/theme.css` | Curapi `--brand` token + system font stack | manual review |
 | `web/default/src/routes/index.tsx` | Replace `<Home />` with redirect → `/sign-in` (unauth) or `/dashboard` (auth) | manual review |
 | `web/default/src/features/auth/auth-layout.tsx` | Hardcoded `[C] curapi` mark + wordmark | manual review |
@@ -74,6 +75,23 @@ what to keep / discard.
   - Default `HeaderNavModules` flips them to `false`, AND the if-blocks
     that render them are gone — DB cannot resurface them. Pricing /
     Console / Home links preserved.
+
+### Channel type combobox bug fix (channel-mutate-drawer.tsx)
+
+- **Bug**: Upstream's `<Combobox options={...}>` (LegacyComboboxInput) renders
+  the raw value in its `<Input>` (`value={String(field.value)}` → "1"). After
+  picking a channel type, the field shows a number like "1" / "8" instead of
+  the human-readable name like "OpenAI" / "Custom" — a regression from the
+  classic theme's `Form.Select` which renders the option label.
+- **Fix**: Replaced the call site with an inline `ChannelTypeCombobox` using
+  the same Popover + Command pattern as `api-key-group-combobox.tsx`. Trigger
+  button shows the matched option label + icon; the popover provides search
+  with proper label rendering on each item; a checkmark indicates the current
+  selection. Form state still stores the numeric type ID.
+- **Scope**: localized to this drawer. The shared `LegacyComboboxInput` is
+  unchanged (other call sites use it as a free-text + suggestion input —
+  changing its render would break those flows). If the same bug is found
+  elsewhere, fix at the call site too rather than at the shared component.
 
 ### Auth pages visual unification
 
