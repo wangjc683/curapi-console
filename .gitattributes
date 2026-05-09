@@ -40,3 +40,13 @@ web/** linguist-vendored
 # Un-vendor core frontend source to keep JavaScript visible in language stats
 web/src/components/** linguist-vendored=false
 web/src/pages/** linguist-vendored=false
+
+# ============================================
+# Curapi customizations — merge strategy
+# ============================================
+# OverviewDashboard: we intentionally simplified upstream's 735-LOC, 7-panel
+# overview to ~30 LOC (SummaryCards + UptimePanel) for Resend-style restraint.
+# Always keep our version on upstream sync — never restore the 7 panels.
+# Requires `git config merge.ours.driver true` (run once per clone).
+# See PATCHES.md for the full rationale.
+web/default/src/features/dashboard/components/overview/overview-dashboard.tsx merge=ours
