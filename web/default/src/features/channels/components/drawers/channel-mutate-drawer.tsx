@@ -172,6 +172,7 @@ import {
   type MissingModelsAction,
 } from '../dialogs/missing-models-confirmation-dialog'
 import { ParamOverrideEditorDialog } from '../dialogs/param-override-editor-dialog'
+import { SelectFetchedModelsDialog } from '../dialogs/select-fetched-models-dialog'
 import { StatusCodeRiskDialog } from '../dialogs/status-code-risk-dialog'
 import { ModelMappingEditor } from '../model-mapping-editor'
 
@@ -420,6 +421,11 @@ export function ChannelMutateDrawer({
   const [customModel, setCustomModel] = useState('')
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
+  // Curapi customization: creation-mode select dialog state.
+  const [creationFetchOpen, setCreationFetchOpen] = useState(false)
+  const [creationFetchedModels, setCreationFetchedModels] = useState<string[]>(
+    []
+  )
   const [channelKey, setChannelKey] = useState<string | null>(null)
   const [isChannelKeyLoading, setIsChannelKeyLoading] = useState(false)
   const [codexOAuthDialogOpen, setCodexOAuthDialogOpen] = useState(false)
@@ -890,7 +896,10 @@ export function ChannelMutateDrawer({
       return
     }
 
-    // For creation mode, fetch and fill all models
+    // Curapi customization: for creation mode, fetch upstream models and let
+    // the user pick which to add (mirrors classic theme's 「获取模型列表」).
+    // Upstream's default-theme behavior was to dump all fetched models into
+    // the field, which adds clutter when the upstream exposes 50-200 models.
     const key = form.getValues('key')
     if (!key?.trim()) {
       toast.error(t('Please enter API key first'))
@@ -905,13 +914,10 @@ export function ChannelMutateDrawer({
         base_url: form.getValues('base_url') || '',
       })
 
-      if (response.success && response.data) {
-        updateModels(response.data, true)
-        toast.success(
-          t('Fetched {{count}} model(s) from upstream', {
-            count: response.data.length,
-          })
-        )
+      if (response.success && response.data && response.data.length > 0) {
+        const unique = Array.from(new Set(response.data))
+        setCreationFetchedModels(unique)
+        setCreationFetchOpen(true)
       } else {
         toast.error(t('No models fetched from upstream'))
       }
@@ -920,7 +926,7 @@ export function ChannelMutateDrawer({
     } finally {
       setIsFetchingModels(false)
     }
-  }, [isEditing, currentRow, form, t, updateModels])
+  }, [isEditing, currentRow, form, t])
 
   // Handle adding custom models
   const handleAddCustomModels = useCallback(() => {
@@ -3515,6 +3521,21 @@ export function ChannelMutateDrawer({
           }}
           redirectModels={redirectModelList}
           redirectSourceModels={redirectModelKeyList}
+        />
+      )}
+
+      {/* Curapi customization: creation-mode upstream-fetch select dialog */}
+      {!isEditing && (
+        <SelectFetchedModelsDialog
+          open={creationFetchOpen}
+          onOpenChange={setCreationFetchOpen}
+          models={creationFetchedModels}
+          onConfirm={(models) => {
+            updateModels(models, true)
+            toast.success(
+              t('Added {{count}} model(s)', { count: models.length })
+            )
+          }}
         />
       )}
 

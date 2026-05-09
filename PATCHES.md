@@ -20,7 +20,9 @@ what to keep / discard.
 | `web/default/src/components/layout/components/system-brand.tsx` | Hardcoded `[C] curapi` for both inline + sidebar variants; drops `useStatus`/`useSystemConfig`; hides version row | manual review |
 | `web/default/src/hooks/use-sidebar-data.ts` | Removes `chat` navGroup (Playground + Chat) | manual review |
 | `web/default/src/hooks/use-top-nav-links.ts` | Default modules disable rankings/docs/about; render branches for those three removed | manual review |
-| `web/default/src/features/channels/components/drawers/channel-mutate-drawer.tsx` | Replace broken legacy Combobox on `type` field with inline `ChannelTypeCombobox` (Popover + Command); shows label like "OpenAI" instead of raw "1" | manual review |
+| `web/default/src/features/channels/components/drawers/channel-mutate-drawer.tsx` | Replace broken legacy Combobox on `type` field with inline `ChannelTypeCombobox`; creation-mode "fetch from upstream" now opens a select dialog instead of dumping all models | manual review |
+| `web/default/src/features/channels/components/dialogs/select-fetched-models-dialog.tsx` | New file: creation-mode select-from-fetched dialog (mirrors classic theme's 「获取模型列表」UX) | new file |
+| `web/default/src/i18n/locales/zh.json` | Three keys for the select dialog: `Add Selected ({{count}})`, `Deselect all`, `Select Models to Add`, `{{selected}} of {{total}} selected` | manual review |
 | `web/default/src/styles/theme.css` | Curapi `--brand` token + system font stack | manual review |
 | `web/default/src/routes/index.tsx` | Replace `<Home />` with redirect → `/sign-in` (unauth) or `/dashboard` (auth) | manual review |
 | `web/default/src/features/auth/auth-layout.tsx` | Hardcoded `[C] curapi` mark + wordmark | manual review |
@@ -75,6 +77,29 @@ what to keep / discard.
   - Default `HeaderNavModules` flips them to `false`, AND the if-blocks
     that render them are gone — DB cannot resurface them. Pricing /
     Console / Home links preserved.
+
+### Channel "fetch from upstream" select-flow (channel-mutate-drawer.tsx + select-fetched-models-dialog.tsx)
+
+- **Behavior gap vs classic**: Classic theme's 「获取模型列表」 fetches the
+  upstream's model list and opens a modal where the user picks which models
+  to add. Default theme's "Fetch from Upstream" (creation mode) instead
+  dumped ALL fetched models into the field — not great when the upstream
+  exposes 50–200 model IDs (most of which the user doesn't want exposed
+  through their channel).
+- **Fix**: New `SelectFetchedModelsDialog` (creation mode only — the editing
+  flow already uses `FetchModelsDialog`, which has different concerns:
+  redirect-aware categorization, comparison against the saved channel's
+  current model list, optional save-to-API path). The new dialog: pre-selects
+  all fetched models (most users want most), supports search, has a
+  Select-all/Deselect-all toggle scoped to the search filter, confirms with
+  a "Add Selected (n)" button. The drawer's `handleFetchModels` (creation
+  branch) now opens this dialog instead of `updateModels(allModels)`.
+- **Why a new dialog instead of refactoring `FetchModelsDialog`**: That
+  component is heavily coupled to `useChannels().currentRow` (existing-channel
+  rendering, GET-by-id endpoint, save-to-API path). Adapting it to creation
+  mode would mean threading a creation-mode prop through ~10 sites with
+  conditional logic, increasing the upstream-sync diff surface for marginal
+  reuse. A dedicated ~150-LOC dialog is cleaner.
 
 ### Channel type combobox bug fix (channel-mutate-drawer.tsx)
 
