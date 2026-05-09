@@ -16,9 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createFileRoute } from '@tanstack/react-router'
-import { Home } from '@/features/home'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useAuthStore } from '@/stores/auth-store'
 
+// Curapi customization: marketing landing handled by curapi.top.
+// Console root redirects: authenticated → dashboard; otherwise → sign-in.
+// Replaces upstream's <Home /> marketing component.
 export const Route = createFileRoute('/')({
-  component: Home,
+  beforeLoad: () => {
+    const { auth } = useAuthStore.getState()
+    if (auth.user) {
+      throw redirect({ to: '/dashboard' })
+    }
+    throw redirect({ to: '/sign-in' })
+  },
 })
