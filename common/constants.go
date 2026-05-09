@@ -21,7 +21,10 @@ var TopUpLink = ""
 var themeValue atomic.Value // stores string; safe for concurrent read/write
 
 func init() {
-	themeValue.Store("classic")
+	// Curapi customization: default to "default" theme (the modern shadcn UI
+	// where our visual changes live). Upstream defaults to "classic".
+	// User can still switch via admin settings.
+	themeValue.Store("default")
 }
 
 func GetTheme() string {
