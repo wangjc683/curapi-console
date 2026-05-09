@@ -30,7 +30,6 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getStatus } from '@/lib/api'
 import '@/lib/dayjs'
-import { applyFaviconToDom } from '@/lib/dom-utils'
 import { handleServerError } from '@/lib/handle-server-error'
 import { DirectionProvider } from './context/direction-provider'
 import { FontProvider } from './context/font-provider'
@@ -109,40 +108,20 @@ declare module '@tanstack/react-router' {
 
 // Render the app
 const rootElement = document.getElementById('root')!
-// Set document.title and favicon from cached status, then refresh from network
-;(function initSystemBranding() {
+// Curapi customization: title + favicon are hardcoded in index.html ("Curapi"
+// + /favicon.svg). We don't let backend system_name / logo override them
+// because we own the brand on this fork. Still warm the status cache for
+// other consumers (sidebar/header read via useStatus).
+;(function warmStatusCache() {
   try {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return
-    const apply = (name: string) => {
-      document.title = name
-      const metaTitle = document.querySelector(
-        'meta[name="title"]'
-      ) as HTMLMetaElement | null
-      if (metaTitle) metaTitle.setAttribute('content', name)
-    }
-    // Cache-first
-    try {
-      const saved = localStorage.getItem('status')
-      if (saved) {
-        const s = JSON.parse(saved)
-        if (s?.system_name) apply(s.system_name)
-        if (s?.logo) applyFaviconToDom(s.logo)
-      }
-    } catch {
-      /* empty */
-    }
-    // Background refresh
+    if (typeof window === 'undefined') return
     getStatus()
       .then((s) => {
-        if (s?.system_name) {
-          apply(s.system_name as string)
-          try {
-            localStorage.setItem('status', JSON.stringify(s))
-          } catch {
-            /* empty */
-          }
+        try {
+          localStorage.setItem('status', JSON.stringify(s))
+        } catch {
+          /* empty */
         }
-        if (s?.logo) applyFaviconToDom(s.logo as string)
       })
       .catch(() => {
         /* empty */

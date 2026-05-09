@@ -13,6 +13,13 @@ what to keep / discard.
 |------|---------|----------------|
 | `common/constants.go` | `themeValue.Store("default")` at `init()` | manual review |
 | `setting/system_setting/theme.go` | `Frontend: "default"` (default value) | manual review |
+| `web/default/index.html` | `<title>Curapi</title>` + favicon `/favicon.svg` + Chinese description | manual review |
+| `web/default/public/favicon.svg` | New file: Curapi yellow-green C-mark on dark | new file |
+| `web/default/src/lib/constants.ts` | `DEFAULT_SYSTEM_NAME = 'Curapi'`, `DEFAULT_LOGO = '/favicon.svg'` | manual review |
+| `web/default/src/main.tsx` | `initSystemBranding` → `warmStatusCache` (no longer overrides title/favicon from `/api/status`) | manual review |
+| `web/default/src/components/layout/components/system-brand.tsx` | Hardcoded `[C] curapi` for both inline + sidebar variants; drops `useStatus`/`useSystemConfig`; hides version row | manual review |
+| `web/default/src/hooks/use-sidebar-data.ts` | Removes `chat` navGroup (Playground + Chat) | manual review |
+| `web/default/src/hooks/use-top-nav-links.ts` | Default modules disable rankings/docs/about; render branches for those three removed | manual review |
 | `web/default/src/styles/theme.css` | Curapi `--brand` token + system font stack | manual review |
 | `web/default/src/routes/index.tsx` | Replace `<Home />` with redirect → `/sign-in` (unauth) or `/dashboard` (auth) | manual review |
 | `web/default/src/features/auth/auth-layout.tsx` | Hardcoded `[C] curapi` mark + wordmark | manual review |
@@ -37,6 +44,36 @@ what to keep / discard.
 - Restricted use: CTA buttons, accent underlines, key data signals only.
 - Replaced `--font-sans` from `'Public Sans'` to `-apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans', 'Microsoft YaHei', 'Helvetica Neue', system-ui, sans-serif`. No webfont needed; Chinese rendered via system fonts.
 - Other tokens (background, foreground, primary, etc.) unchanged from upstream — NewAPI's neutral oklch palette already aligns with Curapi DESIGN.md (white/black/grey, small radii).
+
+### Brand wordmark + favicon (index.html, constants.ts, main.tsx, system-brand.tsx)
+
+- **Tab title**: hardcoded "Curapi" in `index.html` `<title>`. We removed the
+  runtime override path in `main.tsx` (`initSystemBranding` → `warmStatusCache`)
+  so even if a future admin sets `system_name` in DB, the tab still shows
+  "Curapi". The status fetch is still warmed for other consumers.
+- **Favicon**: `public/favicon.svg` — yellow-green Curapi `C` on dark
+  rounded square. Linked via `<link rel="icon" type="image/svg+xml">` in
+  `index.html`. Replaces upstream's `/logo.png` (which we leave on disk for
+  any unaudited references).
+- **Top app bar / sidebar header**: `system-brand.tsx` now hardcodes the
+  same `[C] curapi` CSS-styled mark used in `auth-layout.tsx` for visual
+  consistency (theme-adaptive: foreground bg, background C). Drops the
+  dynamic `useStatus().system_name` and `useSystemConfig().logo` reads.
+  Version row removed from sidebar variant — backend reports NewAPI's
+  upstream version which would leak the fork origin.
+
+### Nav scoping (use-sidebar-data.ts, use-top-nav-links.ts)
+
+- **Sidebar**: removed the `chat` navGroup (Playground + Chat). Curapi
+  positions itself as an API relay for developers — these features dilute
+  focus and confuse the value proposition. Imports for `FlaskConical` and
+  `MessageSquare` cleaned up.
+- **Top navbar**: removed Rankings / Docs / About entirely.
+  - Rankings: meaningful for chat aggregators, not for an API relay.
+  - Docs + About: live on `curapi.top` (marketing site), not the console.
+  - Default `HeaderNavModules` flips them to `false`, AND the if-blocks
+    that render them are gone — DB cannot resurface them. Pricing /
+    Console / Home links preserved.
 
 ### Auth pages visual unification
 
