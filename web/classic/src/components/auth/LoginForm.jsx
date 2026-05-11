@@ -143,6 +143,15 @@ const LoginForm = () => {
       hasCustomOAuthProviders,
   );
 
+  // Curapi customization: if the user is already authed, the login page
+  // is a dead-end. Redirect to console immediately. Pairs with the marketing
+  // site's CTAs (curapi.subsage.top) which point here unconditionally.
+  useEffect(() => {
+    if (userState?.user?.id) {
+      navigate('/console', { replace: true });
+    }
+  }, [userState?.user?.id, navigate]);
+
   useEffect(() => {
     if (status?.turnstile_check) {
       setTurnstileEnabled(true);

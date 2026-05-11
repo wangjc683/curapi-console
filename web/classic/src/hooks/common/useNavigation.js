@@ -34,12 +34,15 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
     const modules = headerNavModules || defaultModules;
 
     // Curapi customization: removed `文档` and `关于` — both live on the
-    // marketing site (curapi.top), no need to duplicate in console nav.
+    // marketing site (curapi.subsage.top → curapi.top), no need to duplicate
+    // in console nav. `首页` now links externally to the marketing site
+    // (which IS the Curapi home; console is just the operator tool).
     const allLinks = [
       {
         text: t('首页'),
         itemKey: 'home',
-        to: '/',
+        isExternal: true,
+        externalLink: 'https://curapi.subsage.top',
       },
       {
         text: t('控制台'),

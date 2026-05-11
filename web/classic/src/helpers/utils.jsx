@@ -54,7 +54,7 @@ export function getSystemName() {
 }
 
 export function getLogo() {
-  return '/favicon.svg';
+  return '/curapi-logo.png';
 }
 
 // Curapi customization: per-user currency override (Option B).

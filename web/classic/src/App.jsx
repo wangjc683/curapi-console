@@ -18,10 +18,17 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { lazy, Suspense, useContext, useMemo } from 'react';
-import { Route, Routes, useLocation, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
 import Loading from './components/common/ui/Loading';
 import User from './pages/User';
 import { AuthRedirect, PrivateRoute, AdminRoute } from './helpers';
+import { UserContext } from './context/User';
 import RegisterForm from './components/auth/RegisterForm';
 import LoginForm from './components/auth/LoginForm';
 import NotFound from './pages/NotFound';
@@ -50,7 +57,9 @@ import PersonalSetting from './components/settings/PersonalSetting';
 import Setup from './pages/Setup';
 import SetupCheck from './components/layout/SetupCheck';
 
-const Home = lazy(() => import('./pages/Home'));
+// Curapi customization: Home no longer used — `/` is intercepted by
+// RootRedirect (see below). NewAPI's home page lives in
+// `./pages/Home` if upstream sync ever revives it.
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
@@ -59,6 +68,21 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 function DynamicOAuth2Callback() {
   const { provider } = useParams();
   return <OAuth2Callback type={provider} />;
+}
+
+// Curapi customization: the console domain (`api.curapi.subsage.top`) is
+// purely operational — marketing/home lives at `curapi.subsage.top`. The
+// root path here just routes users to where they actually need to be:
+//   - already logged in → /console
+//   - not logged in → /login
+// Upstream renders NewAPI's marketing landing here; we override.
+function RootRedirect() {
+  const [userState] = useContext(UserContext);
+  return userState?.user?.id ? (
+    <Navigate to='/console' replace />
+  ) : (
+    <Navigate to='/login' replace />
+  );
 }
 
 function App() {
@@ -90,14 +114,7 @@ function App() {
   return (
     <SetupCheck>
       <Routes>
-        <Route
-          path='/'
-          element={
-            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <Home />
-            </Suspense>
-          }
-        />
+        <Route path='/' element={<RootRedirect />} />
         <Route
           path='/setup'
           element={

@@ -16,13 +16,15 @@ which is the parent of this classic-track work.
 
 | File | Purpose | Notes |
 |------|---------|-------|
-| `web/classic/index.html` | Tab title → "Curapi", favicon → SVG C-mark, Chinese + English meta descriptions rewritten for Curapi positioning | hardcoded; no runtime override |
-| `web/classic/public/favicon.svg` | New file: yellow-green Curapi C-mark on dark rounded square | also serves as logo image fallback |
-| `web/classic/src/helpers/utils.jsx` | `getSystemName()` fallback "New API" → "Curapi"; `getLogo()` fallback "/logo.png" → "/favicon.svg" | upstream stays at /logo.png; only the in-memory fallback changes |
+| `web/classic/index.html` | Tab title → "Curapi", favicon → `/curapi-logo.png` + apple-touch-icon, Chinese + English meta descriptions rewritten for Curapi positioning | hardcoded; no runtime override |
+| `web/classic/public/curapi-logo.png` | New file: official Curapi brand logo (1254×1254 PNG, shared with marketing site) | used by favicon, apple-touch-icon, HeaderLogo via getLogo() |
+| `web/classic/public/favicon.svg` | Legacy: yellow-green Curapi C-mark on dark rounded square — kept on disk but no longer referenced (replaced by curapi-logo.png) | safe to remove on next cleanup pass |
+| `web/classic/src/helpers/utils.jsx` | `getSystemName()` hardcoded "Curapi"; `getLogo()` hardcoded "/curapi-logo.png" (localStorage values from /api/status are ignored — we own the brand) | propagates everywhere via centralized getters |
 | `web/classic/src/index.css` | (1) `--curapi-brand` token + `.curapi-brand-btn` utility class. (2) System font stack. (3) **Layer 1 Semi UI reskin**: primary blue → zinc-900, primary-light-* tints → neutral gray, lighter border, flat cards, tighter form radii, sidebar hover/selected use neutral gray | Light mode only — dark mode keeps Semi defaults for v0.1 |
-| `web/classic/src/components/auth/LoginForm.jsx` | Apply `curapi-brand-btn` to the "继续" submit button | single className addition |
-| `web/classic/src/components/auth/RegisterForm.jsx` | Apply `curapi-brand-btn` to the "注册" submit button | single className addition |
-| `web/classic/src/hooks/common/useNavigation.js` | Remove `文档` + `关于` from top nav `allLinks` | Curapi marketing site (curapi.top) owns docs + about |
+| `web/classic/src/App.jsx` | New `RootRedirect` component intercepts `/` (was NewAPI Home) and routes auth → `/console`, else → `/login`. Marketing site is the public-facing home (curapi.subsage.top); console domain is operational-only | the `pages/Home` import is dropped |
+| `web/classic/src/components/auth/LoginForm.jsx` | (1) Apply `curapi-brand-btn` to the "继续" submit button. (2) New `useEffect` redirects already-logged-in users to `/console` (was a dead-end when arriving via marketing CTAs) | two-line addition |
+| `web/classic/src/components/auth/RegisterForm.jsx` | (1) Apply `curapi-brand-btn` to the "注册" submit button. (2) Same already-authed redirect to `/console` | two-line addition |
+| `web/classic/src/hooks/common/useNavigation.js` | (1) Remove `文档` + `关于` from top nav `allLinks`. (2) `首页` link now external → `https://curapi.subsage.top` (marketing IS Curapi home) | console domain has zero marketing surface |
 | `web/classic/src/components/layout/SiderBar.jsx` | Remove the `chat` section JSX block (operational hooks remain in case upstream sync brings something to revive) | Curapi positions as an API relay, not a chat product |
 | `web/classic/src/components/layout/Footer.jsx` | Bottom attribution: "设计与开发由 New API" → "基于 NewAPI 构建" | more accurate; we built on it, didn't design it |
 
