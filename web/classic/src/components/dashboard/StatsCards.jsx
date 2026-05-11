@@ -33,8 +33,8 @@ const StatsCards = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   return (
-    <div className='mb-4'>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+    <div className='mb-8'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {groupedStatsData.map((group, idx) => (
           <Card
             key={idx}
@@ -42,7 +42,7 @@ const StatsCards = ({
             className={`${group.color} border-0 !rounded-2xl w-full`}
             title={group.title}
           >
-            <div className='space-y-4'>
+            <div className='space-y-5'>
               {group.items.map((item, itemIdx) => (
                 <div
                   key={itemIdx}
@@ -58,8 +58,8 @@ const StatsCards = ({
                       {item.icon}
                     </Avatar>
                     <div>
-                      <div className='text-xs text-gray-500'>{item.title}</div>
-                      <div className='text-lg font-semibold'>
+                      <div className='text-[11px] font-medium uppercase tracking-wide text-gray-500'>{item.title}</div>
+                      <div className='text-2xl font-semibold tracking-tight'>
                         <Skeleton
                           loading={loading}
                           active

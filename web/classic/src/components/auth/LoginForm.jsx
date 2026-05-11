@@ -512,13 +512,13 @@ const LoginForm = () => {
           </div>
 
           <Card className='border-0 !rounded-2xl overflow-hidden'>
-            <div className='flex justify-center pt-6 pb-2'>
-              <Title heading={3} className='text-gray-800 dark:text-gray-200'>
+            <div className='flex justify-center pt-8 pb-4'>
+              <Title heading={2} className='!text-gray-900 dark:!text-gray-100 !tracking-tight'>
                 {t('登 录')}
               </Title>
             </div>
             <div className='px-2 py-8'>
-              <div className='space-y-3'>
+              <div className='space-y-3.5'>
                 {status.wechat_login && (
                   <Button
                     theme='outline'
@@ -726,8 +726,8 @@ const LoginForm = () => {
           </div>
 
           <Card className='border-0 !rounded-2xl overflow-hidden'>
-            <div className='flex justify-center pt-6 pb-2'>
-              <Title heading={3} className='text-gray-800 dark:text-gray-200'>
+            <div className='flex justify-center pt-8 pb-4'>
+              <Title heading={2} className='!text-gray-900 dark:!text-gray-100 !tracking-tight'>
                 {t('登 录')}
               </Title>
             </div>
@@ -744,7 +744,7 @@ const LoginForm = () => {
                   <span className='ml-3'>{t('使用 Passkey 登录')}</span>
                 </Button>
               )}
-              <Form className='space-y-3'>
+              <Form className='space-y-4'>
                 <Form.Input
                   field='username'
                   label={t('用户名或邮箱')}

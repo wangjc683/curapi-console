@@ -22,14 +22,17 @@ import { Typography } from '@douyinfe/semi-ui';
 import { Key } from 'lucide-react';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
-const { Text } = Typography;
+const { Title } = Typography;
 
+// Curapi customization: stronger title hierarchy (was an inline <Text> with
+// blue color — leftover NewAPI styling). Title heading={5} matches Resend's
+// in-card section title scale.
 const TokensDescription = ({ compactMode, setCompactMode, t }) => {
   return (
     <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full'>
-      <div className='flex items-center text-blue-500'>
-        <Key size={16} className='mr-2' />
-        <Text>{t('令牌管理')}</Text>
+      <div className='flex items-center text-gray-900 dark:text-gray-100'>
+        <Key size={16} className='mr-2 text-gray-500' />
+        <Title heading={5} className='!mb-0 !tracking-tight'>{t('令牌管理')}</Title>
       </div>
 
       <CompactModeToggle
