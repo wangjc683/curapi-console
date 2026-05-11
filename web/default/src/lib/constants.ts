@@ -21,9 +21,8 @@ For commercial licensing, please contact support@quantumnous.com
  */
 
 // System Configuration Defaults
-// Curapi customization: hardcoded brand name/logo. We own the brand on this fork.
-export const DEFAULT_SYSTEM_NAME = 'Curapi'
-export const DEFAULT_LOGO = '/favicon.svg'
+export const DEFAULT_SYSTEM_NAME = 'New API'
+export const DEFAULT_LOGO = '/logo.png'
 
 // LocalStorage Keys
 export const STORAGE_KEYS = {

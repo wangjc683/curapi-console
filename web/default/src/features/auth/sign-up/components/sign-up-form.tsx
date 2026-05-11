@@ -340,7 +340,7 @@ export function SignUpForm({
         {/* Submit Button */}
         <Button
           type='submit'
-          className='mt-2 w-full justify-center gap-2 bg-brand text-brand-foreground hover:bg-brand/90'
+          className='mt-2 w-full justify-center gap-2'
           disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
         >
           {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : null}

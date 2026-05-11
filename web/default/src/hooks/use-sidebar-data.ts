@@ -28,6 +28,8 @@ import {
   User,
   Command,
   Radio,
+  FlaskConical,
+  MessageSquare,
   CreditCard,
   ListTodo,
   Settings,
@@ -49,10 +51,22 @@ export function useSidebarData(): SidebarData {
       },
     ],
     navGroups: [
-      // Curapi customization: removed the chat group (Playground + Chat).
-      // Curapi positions itself as an API relay for developers — playground
-      // and chat features don't fit and dilute the focus. Re-add if upstream
-      // sync introduces something we want.
+      {
+        id: 'chat',
+        title: t('Chat'),
+        items: [
+          {
+            title: t('Playground'),
+            url: '/playground',
+            icon: FlaskConical,
+          },
+          {
+            title: t('Chat'),
+            icon: MessageSquare,
+            type: 'chat-presets',
+          },
+        ],
+      },
       {
         id: 'general',
         title: t('General'),

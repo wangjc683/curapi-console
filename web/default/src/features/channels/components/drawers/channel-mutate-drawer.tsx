@@ -29,8 +29,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
-  Check,
-  ChevronsUpDown,
   HelpCircle,
   Loader2,
   Sparkles,
@@ -65,14 +63,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Form,
   FormControl,
@@ -83,11 +74,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -172,7 +158,6 @@ import {
   type MissingModelsAction,
 } from '../dialogs/missing-models-confirmation-dialog'
 import { ParamOverrideEditorDialog } from '../dialogs/param-override-editor-dialog'
-import { SelectFetchedModelsDialog } from '../dialogs/select-fetched-models-dialog'
 import { StatusCodeRiskDialog } from '../dialogs/status-code-risk-dialog'
 import { ModelMappingEditor } from '../model-mapping-editor'
 
@@ -282,109 +267,6 @@ function formatUnixTime(timestamp: unknown): string {
   return new Date(seconds * 1000).toLocaleString()
 }
 
-// Curapi customization: replaces the broken `<Combobox options={...}>` (legacy
-// ComboboxInput) which renders the raw numeric value (e.g., "1") in the input
-// after selection instead of the matching option's label (e.g., "OpenAI").
-// Uses the same Popover + Command pattern as ApiKeyGroupCombobox — selected
-// label is the source of truth in the trigger; values stay numeric in form
-// state via parent's onValueChange.
-type ChannelTypeOption = {
-  value: string
-  label: string
-  icon?: ReactNode
-}
-
-function ChannelTypeCombobox({
-  options,
-  value,
-  onValueChange,
-  placeholder,
-}: {
-  options: ChannelTypeOption[]
-  value: string
-  onValueChange: (value: string) => void
-  placeholder?: string
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [searchValue, setSearchValue] = useState('')
-  const selected = options.find((option) => option.value === value)
-
-  const filteredOptions = useMemo(() => {
-    const search = searchValue.trim().toLowerCase()
-    if (!search) return options
-    return options.filter(
-      (option) =>
-        option.label.toLowerCase().includes(search) ||
-        option.value.toLowerCase().includes(search)
-    )
-  }, [options, searchValue])
-
-  const handleSelect = (selectedValue: string) => {
-    onValueChange(selectedValue)
-    setOpen(false)
-    setSearchValue('')
-  }
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            type='button'
-            variant='outline'
-            role='combobox'
-            aria-expanded={open}
-            className='w-full justify-between font-normal'
-          />
-        }
-      >
-        <span className='flex min-w-0 flex-1 items-center gap-2'>
-          {selected?.icon}
-          <span className='truncate'>
-            {selected?.label || placeholder || t('Select channel type')}
-          </span>
-        </span>
-        <ChevronsUpDown className='h-4 w-4 shrink-0 opacity-50' />
-      </PopoverTrigger>
-      <PopoverContent
-        className='w-[var(--anchor-width)] p-0'
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={t('Search channel type...')}
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandList className='max-h-[320px]'>
-            <CommandEmpty>{t('No channel type found.')}</CommandEmpty>
-            <CommandGroup>
-              {filteredOptions.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={handleSelect}
-                  className='gap-2'
-                >
-                  <Check
-                    className={cn(
-                      'h-4 w-4 shrink-0',
-                      value === option.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {option.icon}
-                  <span className='truncate'>{option.label}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 function CardHeading({ title, icon }: { title: string; icon?: ReactNode }) {
   return (
     <div className='flex items-center gap-2.5'>
@@ -421,11 +303,6 @@ export function ChannelMutateDrawer({
   const [customModel, setCustomModel] = useState('')
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
-  // Curapi customization: creation-mode select dialog state.
-  const [creationFetchOpen, setCreationFetchOpen] = useState(false)
-  const [creationFetchedModels, setCreationFetchedModels] = useState<string[]>(
-    []
-  )
   const [channelKey, setChannelKey] = useState<string | null>(null)
   const [isChannelKeyLoading, setIsChannelKeyLoading] = useState(false)
   const [codexOAuthDialogOpen, setCodexOAuthDialogOpen] = useState(false)
@@ -896,10 +773,7 @@ export function ChannelMutateDrawer({
       return
     }
 
-    // Curapi customization: for creation mode, fetch upstream models and let
-    // the user pick which to add (mirrors classic theme's 「获取模型列表」).
-    // Upstream's default-theme behavior was to dump all fetched models into
-    // the field, which adds clutter when the upstream exposes 50-200 models.
+    // For creation mode, fetch and fill all models
     const key = form.getValues('key')
     if (!key?.trim()) {
       toast.error(t('Please enter API key first'))
@@ -914,10 +788,13 @@ export function ChannelMutateDrawer({
         base_url: form.getValues('base_url') || '',
       })
 
-      if (response.success && response.data && response.data.length > 0) {
-        const unique = Array.from(new Set(response.data))
-        setCreationFetchedModels(unique)
-        setCreationFetchOpen(true)
+      if (response.success && response.data) {
+        updateModels(response.data, true)
+        toast.success(
+          t('Fetched {{count}} model(s) from upstream', {
+            count: response.data.length,
+          })
+        )
       } else {
         toast.error(t('No models fetched from upstream'))
       }
@@ -926,7 +803,7 @@ export function ChannelMutateDrawer({
     } finally {
       setIsFetchingModels(false)
     }
-  }, [isEditing, currentRow, form, t])
+  }, [isEditing, currentRow, form, t, updateModels])
 
   // Handle adding custom models
   const handleAddCustomModels = useCallback(() => {
@@ -1285,7 +1162,7 @@ export function ChannelMutateDrawer({
                       <FormItem>
                         <FormLabel>{t('Type *')}</FormLabel>
                         <FormControl>
-                          <ChannelTypeCombobox
+                          <Combobox
                             options={channelTypeOptions}
                             value={String(field.value)}
                             onValueChange={(value) => {
@@ -1295,6 +1172,9 @@ export function ChannelMutateDrawer({
                               }
                             }}
                             placeholder={t('Select channel type')}
+                            searchPlaceholder={t('Search channel type...')}
+                            emptyText={t('No channel type found.')}
+                            allowCustomValue
                           />
                         </FormControl>
                         <FormMessage />
@@ -3521,21 +3401,6 @@ export function ChannelMutateDrawer({
           }}
           redirectModels={redirectModelList}
           redirectSourceModels={redirectModelKeyList}
-        />
-      )}
-
-      {/* Curapi customization: creation-mode upstream-fetch select dialog */}
-      {!isEditing && (
-        <SelectFetchedModelsDialog
-          open={creationFetchOpen}
-          onOpenChange={setCreationFetchOpen}
-          models={creationFetchedModels}
-          onConfirm={(models) => {
-            updateModels(models, true)
-            toast.success(
-              t('Added {{count}} model(s)', { count: models.length })
-            )
-          }}
         />
       )}
 

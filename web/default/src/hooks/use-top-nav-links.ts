@@ -29,18 +29,13 @@ export type TopNavLink = {
 }
 
 // Default navigation configuration
-// Curapi customization: rankings / docs / about disabled by default.
-// - rankings: not relevant for an API relay (vs. a chat aggregator)
-// - docs + about: live on curapi.top (marketing site), not the console
-// We also strip the corresponding render branches below so an admin enabling
-// these in DB won't resurface them — we own the nav on this fork.
 const DEFAULT_HEADER_NAV_MODULES = {
   home: true,
   console: true,
   pricing: { enabled: true, requireAuth: false },
-  rankings: { enabled: false, requireAuth: false },
-  docs: false,
-  about: false,
+  rankings: { enabled: true, requireAuth: false },
+  docs: true,
+  about: true,
 }
 
 function parseAccessModule(
@@ -118,6 +113,9 @@ export function useTopNavLinks(): TopNavLink[] {
     return parseHeaderNavModules(status?.HeaderNavModules)
   }, [status?.HeaderNavModules])
 
+  // Documentation link (may be external)
+  const docsLink: string | undefined = status?.docs_link as string | undefined
+
   const isAuthed = !!auth?.user
 
   const links: TopNavLink[] = []
@@ -139,8 +137,26 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Model Square'), href: '/pricing', disabled })
   }
 
-  // Curapi customization: Rankings / Docs / About branches removed.
-  // Rationale lives on DEFAULT_HEADER_NAV_MODULES above.
+  // Rankings
+  const rankings = modules?.rankings
+  if (rankings && typeof rankings === 'object' && rankings.enabled) {
+    const disabled = rankings.requireAuth && !isAuthed
+    links.push({ title: t('Rankings'), href: '/rankings', disabled })
+  }
+
+  // Docs (supports external links)
+  if (modules?.docs !== false) {
+    if (docsLink) {
+      links.push({ title: t('Docs'), href: docsLink, external: true })
+    } else {
+      links.push({ title: t('Docs'), href: '/docs' })
+    }
+  }
+
+  // About
+  if (modules?.about !== false) {
+    links.push({ title: t('About'), href: '/about' })
+  }
 
   return links
 }

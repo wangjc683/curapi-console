@@ -10,8 +10,7 @@ type ThemeSettings struct {
 }
 
 var themeSettings = ThemeSettings{
-	// Curapi customization: default to "default" frontend (modern shadcn UI).
-	Frontend: "default",
+	Frontend: "classic",
 }
 
 func init() {

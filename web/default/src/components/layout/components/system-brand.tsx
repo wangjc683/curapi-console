@@ -19,6 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { useStatus } from '@/hooks/use-status'
+import { useSystemConfig } from '@/hooks/use-system-config'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -26,6 +28,8 @@ import {
 } from '@/components/ui/sidebar'
 
 type SystemBrandProps = {
+  defaultName?: string
+  defaultVersion?: string
   /**
    * Visual layout:
    * - 'sidebar': stacked card style (used inside the sidebar header).
@@ -34,13 +38,21 @@ type SystemBrandProps = {
   variant?: 'sidebar' | 'inline'
 }
 
-// Curapi customization: hardcoded `[C] curapi` mark + wordmark, identical to
-// auth-layout.tsx so the brand stays unified across console + auth + favicon.
-// Replaces upstream's dynamic `status.system_name` + `useSystemConfig().logo`
-// — we own the brand on this fork.
+/**
+ * System brand component
+ * Displays current system logo + name.
+ * - inline: compact pill in the top app bar; clicking navigates to home (/)
+ * - sidebar: stacked card in the sidebar header (display only)
+ */
 export function SystemBrand(props: SystemBrandProps) {
   const { t } = useTranslation()
+  const { status } = useStatus()
+  const { logo } = useSystemConfig()
+
   const variant = props.variant ?? 'sidebar'
+  const name = status?.system_name || props.defaultName || 'New API'
+  const version =
+    status?.version || props.defaultVersion || t('Unknown version')
 
   if (variant === 'inline') {
     return (
@@ -52,10 +64,14 @@ export function SystemBrand(props: SystemBrandProps) {
           'hover:bg-accent focus-visible:ring-ring/40 focus-visible:ring-2'
         )}
       >
-        <span className='bg-foreground text-background inline-flex h-5 w-5 items-center justify-center rounded-md font-mono text-[11px] font-medium tracking-[-0.04em]'>
-          C
-        </span>
-        <span className='tracking-[-0.02em]'>curapi</span>
+        <div className='flex size-5 items-center justify-center overflow-hidden rounded-md'>
+          <img
+            src={logo}
+            alt={t('Logo')}
+            className='size-full rounded-md object-cover'
+          />
+        </div>
+        <span className='max-w-[12rem] truncate'>{name}</span>
       </Link>
     )
   }
@@ -68,13 +84,16 @@ export function SystemBrand(props: SystemBrandProps) {
           className='hover:text-sidebar-foreground active:text-sidebar-foreground cursor-default hover:bg-transparent active:bg-transparent'
           render={<div />}
         >
-          <span className='bg-foreground text-background inline-flex h-8 w-8 items-center justify-center rounded-lg font-mono text-[17px] font-medium tracking-[-0.04em]'>
-            C
-          </span>
+          <div className='flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg'>
+            <img
+              src={logo}
+              alt={t('Logo')}
+              className='size-full rounded-lg object-cover'
+            />
+          </div>
           <div className='grid flex-1 text-start text-sm leading-tight group-data-[collapsible=icon]:hidden'>
-            <span className='truncate font-medium tracking-[-0.02em]'>
-              curapi
-            </span>
+            <span className='truncate font-semibold'>{name}</span>
+            <span className='truncate text-xs'>{version}</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

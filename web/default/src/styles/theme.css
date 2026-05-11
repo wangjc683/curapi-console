@@ -19,15 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans',
-    'Microsoft YaHei', 'Helvetica Neue', system-ui, sans-serif;
+  --font-sans: 'Public Sans', sans-serif;
   --font-inter:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans',
-    'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   --font-manrope:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans',
-    'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -69,10 +67,6 @@ For commercial licensing, please contact support@quantumnous.com
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Curapi brand 黄绿色，限定场景：关键 CTA / accent underline / 关键数字下划线 */
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -128,10 +122,6 @@ For commercial licensing, please contact support@quantumnous.com
   --sidebar-ring: oklch(0.708 0 0);
   --skeleton-base: oklch(0.97 0 0);
   --skeleton-highlight: oklch(0.985 0 0);
-
-  /* Curapi brand 黄绿 ≈ #D9FF4B */
-  --brand: oklch(0.949 0.275 122.5);
-  --brand-foreground: oklch(0.145 0 0);
 }
 
 .dark {
@@ -178,8 +168,4 @@ For commercial licensing, please contact support@quantumnous.com
   --sidebar-ring: oklch(0.68 0 0);
   --skeleton-base: oklch(0.285 0 0);
   --skeleton-highlight: oklch(0.39 0 0);
-
-  /* Curapi brand 在深色下保持同色（黄绿在偏灰深底上反差大） */
-  --brand: oklch(0.949 0.275 122.5);
-  --brand-foreground: oklch(0.145 0 0);
 }
