@@ -19,7 +19,7 @@ which is the parent of this classic-track work.
 | `web/classic/index.html` | Tab title → "Curapi", favicon → SVG C-mark, Chinese + English meta descriptions rewritten for Curapi positioning | hardcoded; no runtime override |
 | `web/classic/public/favicon.svg` | New file: yellow-green Curapi C-mark on dark rounded square | also serves as logo image fallback |
 | `web/classic/src/helpers/utils.jsx` | `getSystemName()` fallback "New API" → "Curapi"; `getLogo()` fallback "/logo.png" → "/favicon.svg" | upstream stays at /logo.png; only the in-memory fallback changes |
-| `web/classic/src/index.css` | Inject `--curapi-brand` token + replace font-family with system stack + add `.curapi-brand-btn` utility class | Semi UI primary tokens untouched (keeps wider UI calm); brand is opt-in via class |
+| `web/classic/src/index.css` | (1) `--curapi-brand` token + `.curapi-brand-btn` utility class. (2) System font stack. (3) **Layer 1 Semi UI reskin**: primary blue → zinc-900, primary-light-* tints → neutral gray, lighter border, flat cards, tighter form radii, sidebar hover/selected use neutral gray | Light mode only — dark mode keeps Semi defaults for v0.1 |
 | `web/classic/src/components/auth/LoginForm.jsx` | Apply `curapi-brand-btn` to the "继续" submit button | single className addition |
 | `web/classic/src/components/auth/RegisterForm.jsx` | Apply `curapi-brand-btn` to the "注册" submit button | single className addition |
 | `web/classic/src/hooks/common/useNavigation.js` | Remove `文档` + `关于` from top nav `allLinks` | Curapi marketing site (curapi.top) owns docs + about |
@@ -46,13 +46,30 @@ which is the parent of this classic-track work.
   YaHei`). No webfont request; consistent rendering in CN OSes.
 - **Brand variable**: `--curapi-brand` exposed as a CSS variable so
   future styles can reference it without re-declaring the color.
-- **`.curapi-brand-btn` utility**: applies brand color to opt-in buttons via
-  `!important` (needed to win against Semi's inline style cascade). Used
-  sparingly — only on hero CTAs (login, register) for v0.1. Adding it to more
-  buttons would dilute the signal.
-- **NOT touched**: Semi's `--semi-color-primary` and other tokens. Wholesale
-  swap would tint the entire UI yellow-green (links, focus rings, etc.) and
-  fight Semi's accessibility-tuned palette. The opt-in class is safer.
+- **`.curapi-brand-btn` utility**: applies yellow-green to opt-in buttons via
+  `!important` (needed to win against Semi's inline style cascade). The
+  "exceptional attention" color above the default primary. Used sparingly —
+  only on hero CTAs (login, register) for v0.1. Adding it to more buttons
+  would dilute the signal.
+- **Layer 1 Semi reskin** (lights up everywhere — admin too):
+  - `--semi-color-primary` family: ByteDance blue → zinc-900 (`#18181b`),
+    zinc-800 hover, zinc-950 active. Stripe/Resend "primary = near-black"
+    pattern. Affects every `<Button type='primary'>`, focus rings, active
+    tabs, selected menu items, links.
+  - `--semi-color-primary-light-*` (subtle bg for selected/hover):
+    neutral gray tints instead of blue. Selected sidebar item gets the
+    soft gray fill Resend uses.
+  - `--semi-color-border`: lighter (`rgba(0,0,0,0.08)`) — more refined.
+  - `.semi-card`: no shadow, thin border (Resend signature flat cards).
+  - Tighter `border-radius: 6px` on Buttons / Inputs / Selects / Form inputs.
+  - `.sidebar-nav-item:hover` / `.sidebar-nav-item-selected`: rewritten
+    from `rgba(var(--semi-blue-0), 0.08/0.12)` (which referenced a
+    blue-tinted token) to neutral gray rgba.
+- **NOT touched**: `--semi-color-warning/-danger/-success` keep their semantic
+  hues. `--semi-blue-*` numeric primitives left intact (still available for
+  any module that wants blue specifically — Curapi just doesn't lead with it).
+- **Dark mode**: NOT redefined. `body[theme-mode='dark']` still uses Semi
+  defaults — v0.1 only ships polished light mode.
 
 ### Nav scoping (useNavigation.js, SiderBar.jsx)
 
