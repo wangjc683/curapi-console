@@ -17,7 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Banner,
   Button,
@@ -49,10 +56,13 @@ import {
   useModelPricingEditorState,
 } from '../hooks/useModelPricingEditorState';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
+import { getEffectiveQuotaDisplayType } from '../../../../helpers';
+import { StatusContext } from '../../../../context/Status';
 import TieredPricingEditor from './TieredPricingEditor';
 
 const { Text } = Typography;
 const EMPTY_CANDIDATE_MODEL_NAMES = [];
+const NUMERIC_INPUT_REGEX = /^(\d+(\.\d*)?|\.\d*)?$/;
 
 const PriceInput = ({
   label,
@@ -85,6 +95,65 @@ const PriceInput = ({
   </div>
 );
 
+// Curapi customization: per-price wrapper that converts USD storage ↔ display
+// currency on the fly. The editor state hook stays USD-anchored (no schema
+// change); only the input layer flips between $ and ¥ based on the header
+// CurrencySelector. Preserves intermediate typing ("7." → "7.5") via local
+// text state so the conversion never eats user keystrokes.
+function CurrencyPriceInput({
+  usdValue,
+  onUsdChange,
+  isCNY,
+  rate,
+  ...rest
+}) {
+  const computeDisplay = useCallback(
+    (usd) => {
+      if (usd === '' || usd === undefined || usd === null) return '';
+      if (!isCNY) return String(usd);
+      const num = Number(usd);
+      if (!Number.isFinite(num)) return '';
+      return parseFloat((num * rate).toFixed(8)).toString();
+    },
+    [isCNY, rate],
+  );
+
+  const [text, setText] = useState(() => computeDisplay(usdValue));
+  // Track the last USD we've pushed up so we can detect external resets
+  // (model selection switch, batch apply) and re-derive `text` from them
+  // without clobbering mid-edit input.
+  const lastPushedRef = useRef(usdValue);
+
+  useEffect(() => {
+    if (usdValue !== lastPushedRef.current) {
+      lastPushedRef.current = usdValue;
+      setText(computeDisplay(usdValue));
+    }
+  }, [usdValue, computeDisplay]);
+
+  const handleChange = useCallback(
+    (nextText) => {
+      setText(nextText);
+      if (nextText === '') {
+        lastPushedRef.current = '';
+        onUsdChange('');
+        return;
+      }
+      if (!NUMERIC_INPUT_REGEX.test(nextText)) return;
+      const num = Number(nextText);
+      if (!Number.isFinite(num)) return;
+      const usdString = isCNY
+        ? parseFloat((num / rate).toFixed(12)).toString()
+        : nextText;
+      lastPushedRef.current = usdString;
+      onUsdChange(usdString);
+    },
+    [isCNY, rate, onUsdChange],
+  );
+
+  return <PriceInput {...rest} value={text} onChange={handleChange} />;
+}
+
 export default function ModelPricingEditor({
   options,
   refresh,
@@ -102,6 +171,23 @@ export default function ModelPricingEditor({
   const [addVisible, setAddVisible] = useState(false);
   const [batchVisible, setBatchVisible] = useState(false);
   const [newModelName, setNewModelName] = useState('');
+
+  // Curapi customization: derive the effective input currency from the
+  // header CurrencySelector. Storage stays USD; this only flips display +
+  // input convention so a CN admin can type prices in ¥ without doing
+  // mental math each time.
+  const [statusState] = useContext(StatusContext);
+  const effectiveCurrency = getEffectiveQuotaDisplayType();
+  const isCNY = effectiveCurrency === 'CNY';
+  const usdRate = statusState?.status?.usd_exchange_rate || 7;
+  const tokenSuffix = isCNY ? '¥/1M tokens' : PRICE_SUFFIX;
+  const tokenPlaceholder = isCNY
+    ? t('输入 ¥/1M tokens')
+    : t('输入 $/1M tokens');
+  const perCallSuffix = isCNY ? t('¥/次') : t('$/次');
+  const perCallPlaceholder = isCNY
+    ? t('输入每次调用价格（¥）')
+    : t('输入每次调用价格');
 
   const {
     selectedModel,
@@ -441,12 +527,14 @@ export default function ModelPricingEditor({
                 ) : null}
 
                 {selectedModel.billingMode === 'per-request' ? (
-                  <PriceInput
+                  <CurrencyPriceInput
                     label={t('固定价格')}
-                    value={selectedModel.fixedPrice}
-                    placeholder={t('输入每次调用价格')}
-                    suffix={t('$/次')}
-                    onChange={(value) => handleNumericFieldChange('fixedPrice', value)}
+                    usdValue={selectedModel.fixedPrice}
+                    placeholder={perCallPlaceholder}
+                    suffix={perCallSuffix}
+                    onUsdChange={(value) => handleNumericFieldChange('fixedPrice', value)}
+                    isCNY={isCNY}
+                    rate={usdRate}
                     extraText={t('适合 MJ / 任务类等按次收费模型。')}
                   />
                 ) : selectedModel.billingMode === 'tiered_expr' ? (
@@ -467,11 +555,14 @@ export default function ModelPricingEditor({
                       }}
                     >
                       <div className='font-medium mb-3'>{t('基础价格')}</div>
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('输入价格')}
-                        value={selectedModel.inputPrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) => handleNumericFieldChange('inputPrice', value)}
+                        usdValue={selectedModel.inputPrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) => handleNumericFieldChange('inputPrice', value)}
+                        isCNY={isCNY}
+                        rate={usdRate}
                       />
                       {selectedModel.completionRatioLocked ? (
                         <Banner
@@ -489,13 +580,16 @@ export default function ModelPricingEditor({
                           )}
                         />
                       ) : null}
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('补全价格')}
-                        value={selectedModel.completionPrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) =>
+                        usdValue={selectedModel.completionPrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) =>
                           handleNumericFieldChange('completionPrice', value)
                         }
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
@@ -532,11 +626,14 @@ export default function ModelPricingEditor({
                               : ''
                         }
                       />
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('缓存读取价格')}
-                        value={selectedModel.cachePrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) => handleNumericFieldChange('cachePrice', value)}
+                        usdValue={selectedModel.cachePrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) => handleNumericFieldChange('cachePrice', value)}
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
@@ -554,13 +651,16 @@ export default function ModelPricingEditor({
                             : ''
                         }
                       />
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('缓存创建价格')}
-                        value={selectedModel.createCachePrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) =>
+                        usdValue={selectedModel.createCachePrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) =>
                           handleNumericFieldChange('createCachePrice', value)
                         }
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
@@ -601,11 +701,14 @@ export default function ModelPricingEditor({
                           {t('这些价格都是可选项，不填也可以。')}
                         </div>
                       </div>
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('图片输入价格')}
-                        value={selectedModel.imagePrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) => handleNumericFieldChange('imagePrice', value)}
+                        usdValue={selectedModel.imagePrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) => handleNumericFieldChange('imagePrice', value)}
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
@@ -623,13 +726,16 @@ export default function ModelPricingEditor({
                             : ''
                         }
                       />
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('音频输入价格')}
-                        value={selectedModel.audioInputPrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) =>
+                        usdValue={selectedModel.audioInputPrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) =>
                           handleNumericFieldChange('audioInputPrice', value)
                         }
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
@@ -653,13 +759,16 @@ export default function ModelPricingEditor({
                             : ''
                         }
                       />
-                      <PriceInput
+                      <CurrencyPriceInput
                         label={t('音频补全价格')}
-                        value={selectedModel.audioOutputPrice}
-                        placeholder={t('输入 $/1M tokens')}
-                        onChange={(value) =>
+                        usdValue={selectedModel.audioOutputPrice}
+                        placeholder={tokenPlaceholder}
+                        suffix={tokenSuffix}
+                        onUsdChange={(value) =>
                           handleNumericFieldChange('audioOutputPrice', value)
                         }
+                        isCNY={isCNY}
+                        rate={usdRate}
                         headerAction={
                           <Switch
                             size='small'
