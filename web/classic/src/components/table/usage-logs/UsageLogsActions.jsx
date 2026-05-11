@@ -44,41 +44,46 @@ const LogsActions = ({
 
   return (
     <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full'>
+      {/* Curapi customization: replaced 3 colored Tag stats (blue/pink/white +
+          heavy shadow) with neutral pill cards. Same content, calmer visual —
+          stats should READ as data, not compete for attention. */}
       <Skeleton loading={needSkeleton} active placeholder={placeholder}>
-        <Space>
+        <Space spacing={12}>
           <Tag
-            color='blue'
+            color='white'
             style={{
               fontWeight: 500,
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-              padding: 13,
+              padding: '8px 14px',
+              border: '1px solid var(--semi-color-border)',
             }}
             className='!rounded-lg'
           >
-            {t('消耗额度')}: {renderQuota(stat.quota)}
-          </Tag>
-          <Tag
-            color='pink'
-            style={{
-              fontWeight: 500,
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-              padding: 13,
-            }}
-            className='!rounded-lg'
-          >
-            RPM: {stat.rpm}
+            <span className='text-gray-500 mr-1.5'>{t('消耗额度')}</span>
+            <span className='font-semibold'>{renderQuota(stat.quota)}</span>
           </Tag>
           <Tag
             color='white'
             style={{
-              border: 'none',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
               fontWeight: 500,
-              padding: 13,
+              padding: '8px 14px',
+              border: '1px solid var(--semi-color-border)',
             }}
             className='!rounded-lg'
           >
-            TPM: {stat.tpm}
+            <span className='text-gray-500 mr-1.5'>RPM</span>
+            <span className='font-semibold'>{stat.rpm}</span>
+          </Tag>
+          <Tag
+            color='white'
+            style={{
+              fontWeight: 500,
+              padding: '8px 14px',
+              border: '1px solid var(--semi-color-border)',
+            }}
+            className='!rounded-lg'
+          >
+            <span className='text-gray-500 mr-1.5'>TPM</span>
+            <span className='font-semibold'>{stat.tpm}</span>
           </Tag>
         </Space>
       </Skeleton>

@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Avatar,
   Typography,
   Card,
   Button,
@@ -368,7 +367,7 @@ const RechargeCard = ({
                                     />
                                   )
                                 }
-                                className='!rounded-lg !px-4 !py-2'
+                                className='!rounded-lg !px-5 !py-2.5'
                               >
                                 {payMethod.name}
                               </Button>
@@ -423,7 +422,7 @@ const RechargeCard = ({
                     </div>
                   }
                 >
-                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'>
+                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
                     {presetAmounts.map((preset, index) => {
                       const discount =
                         preset.discount ||
@@ -476,7 +475,7 @@ const RechargeCard = ({
                             height: '100%',
                             width: '100%',
                           }}
-                          bodyStyle={{ padding: '12px' }}
+                          bodyStyle={{ padding: '16px 14px' }}
                           onClick={() => {
                             selectPresetAmount(preset);
                             onlineFormApiRef.current?.setValue(
@@ -623,16 +622,14 @@ const RechargeCard = ({
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
       {/* 卡片头部 */}
-      <div className='flex items-center justify-between mb-4'>
+      <div className='flex items-center justify-between mb-6'>
         <div className='flex items-center'>
-          <Avatar size='small' color='blue' className='mr-3 shadow-md'>
-            <CreditCard size={16} />
-          </Avatar>
+          <CreditCard size={20} className='mr-3 text-gray-500' />
           <div>
-            <Typography.Text className='text-lg font-medium'>
+            <Typography.Title heading={4} className='!mb-0 !tracking-tight'>
               {t('账户充值')}
-            </Typography.Text>
-            <div className='text-xs'>{t('多种充值方式，安全便捷')}</div>
+            </Typography.Title>
+            <div className='text-xs text-gray-500 mt-0.5'>{t('多种充值方式，安全便捷')}</div>
           </div>
         </div>
         <Button
