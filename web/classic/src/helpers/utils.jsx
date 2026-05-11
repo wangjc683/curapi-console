@@ -57,6 +57,23 @@ export function getLogo() {
   return '/favicon.svg';
 }
 
+// Curapi customization: per-user currency override (Option B).
+// `CURAPI_CURRENCY_KEY` is written by the header `CurrencySelector` dropdown
+// and takes priority over the backend admin setting `quota_display_type`.
+// Final fallback is 'CNY' — Curapi's positioning is for Chinese customers,
+// so the default differs from upstream's 'USD'.
+// Lives in utils.jsx (not render.jsx) because render.jsx imports utils.jsx —
+// keeping the helper here avoids a circular import.
+export const CURAPI_CURRENCY_KEY = 'curapi_currency_preference';
+
+export function getEffectiveQuotaDisplayType() {
+  const userPref = localStorage.getItem(CURAPI_CURRENCY_KEY);
+  if (userPref === 'CNY' || userPref === 'USD') return userPref;
+  const backend = localStorage.getItem('quota_display_type');
+  if (backend) return backend;
+  return 'CNY';
+}
+
 export function getUserIdFromLocalStorage() {
   let user = localStorage.getItem('user');
   if (!user) return -1;
@@ -899,7 +916,7 @@ export const getModelPriceItems = (
 export const formatDynamicPriceSummary = (billingExpr, t, groupRatio = 1) => {
   if (!billingExpr) return <span style={{ color: 'var(--semi-color-text-1)' }}>{t('动态计费')}</span>;
 
-  const quotaDisplayType = localStorage.getItem('quota_display_type') || 'USD';
+  const quotaDisplayType = getEffectiveQuotaDisplayType();
   let symbol = '$';
   let rate = 1;
   try {

@@ -21,6 +21,7 @@ import React from 'react';
 import NewYearButton from './NewYearButton';
 import NotificationButton from './NotificationButton';
 import ThemeToggle from './ThemeToggle';
+import CurrencySelector from './CurrencySelector';
 import LanguageSelector from './LanguageSelector';
 import UserArea from './UserArea';
 
@@ -51,6 +52,8 @@ const ActionButtons = ({
       />
 
       <ThemeToggle theme={theme} onThemeToggle={onThemeToggle} t={t} />
+
+      <CurrencySelector t={t} />
 
       <LanguageSelector
         currentLang={currentLang}
