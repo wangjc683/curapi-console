@@ -1154,12 +1154,15 @@ export function renderQuota(quota, digits = 2) {
   let symbol = '$';
   let value = resultUSD;
   if (quotaDisplayType === 'CNY') {
+    // Curapi customization: fallback rate 1 → 7 to stay consistent with
+    // getCurrencyConfig (a 1:1 fallback would silently show wrong prices
+    // when status hasn't loaded yet or admin hasn't set usd_exchange_rate).
     const statusStr = localStorage.getItem('status');
-    let usdRate = 1;
+    let usdRate = 7;
     try {
       if (statusStr) {
         const s = JSON.parse(statusStr);
-        usdRate = s?.usd_exchange_rate || 1;
+        usdRate = s?.usd_exchange_rate || 7;
       }
     } catch (e) {}
     value = resultUSD * usdRate;
