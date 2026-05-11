@@ -19,7 +19,14 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API, copy, showError, showInfo, showSuccess } from '../../helpers';
+import {
+  API,
+  copy,
+  showError,
+  showInfo,
+  showSuccess,
+  getEffectiveQuotaDisplayType,
+} from '../../helpers';
 import { Modal } from '@douyinfe/semi-ui';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
@@ -41,7 +48,13 @@ export const useModelPricingData = () => {
   const [filterTag, setFilterTag] = useState('all'); // 模型标签筛选: 'all' | string
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currency, setCurrency] = useState('USD');
+  // Curapi customization: respect the per-user header CurrencySelector
+  // preference (CURAPI_CURRENCY_KEY in localStorage) instead of defaulting
+  // to USD. getEffectiveQuotaDisplayType reads user pref → backend → 'CNY'.
+  const [currency, setCurrency] = useState(() => {
+    const effective = getEffectiveQuotaDisplayType();
+    return effective === 'TOKENS' ? 'USD' : effective;
+  });
   const [showWithRecharge, setShowWithRecharge] = useState(false);
   const [tokenUnit, setTokenUnit] = useState('M');
   const [models, setModels] = useState([]);
@@ -74,8 +87,11 @@ export const useModelPricingData = () => {
   );
 
   // 默认货币与站点展示类型同步；TOKENS 由视图层走倍率展示
+  // Curapi customization: getEffectiveQuotaDisplayType layers user preference
+  // (CURAPI_CURRENCY_KEY) on top of backend quota_display_type. Otherwise the
+  // header CurrencySelector toggle wouldn't affect Pricing page rendering.
   const siteDisplayType = useMemo(
-    () => statusState?.status?.quota_display_type || 'USD',
+    () => getEffectiveQuotaDisplayType(),
     [statusState],
   );
   useEffect(() => {
