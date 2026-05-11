@@ -58,4 +58,57 @@ export function setStatusData(data) {
 
 export function setUserData(data) {
   localStorage.setItem('user', JSON.stringify(data));
+  setAuthMarker();
+}
+
+/**
+ * Cross-subdomain "logged-in" marker cookie.
+ *
+ * Why: the Curapi landing site (curapi.subsage.top) needs to know whether the
+ * visitor is already logged in to the console (api.curapi.subsage.top) so it
+ * can show a "Console →" button instead of "Login" / "Get API Key". The console
+ * session itself (gin-sessions) is a host-only cookie that the landing site
+ * cannot read, and localStorage is sandboxed per origin. So we set a tiny
+ * non-sensitive boolean cookie scoped to the parent domain — readable by both
+ * sides via document.cookie.
+ *
+ * This is an OPTIMISTIC marker: the cookie may outlive the server-side session
+ * (e.g. session expiry, server-side invalidation). In that case the landing
+ * site shows "Console →", the user clicks, and the console redirects them to
+ * /login. Mild but acceptable trade-off vs. wiring up CORS + credentialed
+ * fetches on every landing page view.
+ *
+ * NOTE: the Domain attribute is set by inspecting window.location.hostname and
+ * walking up to the registrable parent (skipping the leftmost label). For
+ * localhost / single-label hosts the marker is set host-only (still works for
+ * dev where landing + console share localhost).
+ */
+function getMarkerCookieDomain() {
+  if (typeof window === 'undefined') return null;
+  const host = window.location.hostname;
+  // localhost / single-label / IP — leave Domain off (host-only)
+  if (!host || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host))
+    return null;
+  const parts = host.split('.');
+  if (parts.length < 2) return null;
+  // Drop the leftmost label so e.g. api.curapi.subsage.top → .curapi.subsage.top
+  return '.' + parts.slice(1).join('.');
+}
+
+export function setAuthMarker() {
+  if (typeof document === 'undefined') return;
+  const domain = getMarkerCookieDomain();
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  const domainAttr = domain ? `; Domain=${domain}` : '';
+  // 7 days — matches typical session lifetime; refreshed every time
+  // setUserData runs (i.e. on login + on /api/user/self refresh).
+  document.cookie = `curapi_authed=1; Path=/; Max-Age=604800; SameSite=Lax${secure}${domainAttr}`;
+}
+
+export function clearAuthMarker() {
+  if (typeof document === 'undefined') return;
+  const domain = getMarkerCookieDomain();
+  const domainAttr = domain ? `; Domain=${domain}` : '';
+  // Setting Max-Age=0 with the same Path/Domain deletes it.
+  document.cookie = `curapi_authed=; Path=/; Max-Age=0; SameSite=Lax${domainAttr}`;
 }

@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { Toast, Pagination } from '@douyinfe/semi-ui';
+import { clearAuthMarker } from './data';
 import { toastConstants, BILLING_PRICING_VARS, BILLING_VAR_REGEX } from '../constants';
 import React from 'react';
 import { toast } from 'react-toastify';
@@ -143,6 +144,7 @@ export function showError(error) {
         case 401:
           // 清除用户状态
           localStorage.removeItem('user');
+          clearAuthMarker();
           // toast.error('错误：未登录或登录已过期，请重新登录！', showErrorOptions);
           window.location.href = '/login?expired=true';
           break;

@@ -44,6 +44,11 @@ in the marketing repo's `docs/v0.1-deployment.md`.
 | `web/classic/src/components/table/tokens/TokensDescription.jsx` | Layer 2 polish: "令牌管理" was inline blue Text → neutral-gray `<Title heading={5}>`. Key icon demoted to gray-500 (title leads, not icon) | blue was NewAPI residue |
 | `web/classic/src/components/topup/RechargeCard.jsx` | Layer 2 polish: card header dropped blue Avatar+badge, replaced with bare CreditCard icon + Title heading={4}; preset amount grid gap-2 → gap-4 + bodyStyle padding 12px → 16px 14px; payment method buttons px-4 py-2 → px-5 py-2.5 | also removed unused Avatar import |
 | `web/classic/src/components/table/usage-logs/UsageLogsActions.jsx` | Layer 2 polish: 3 colored stat tags (blue/pink/white + heavy shadow) → neutral white pills with thin border, gray-500 label + bold value, 12px gap between | data should read as data, not compete for attention |
+| `web/classic/src/helpers/data.js` | (1) `setUserData` now also calls `setAuthMarker()`. (2) New exported `setAuthMarker()` / `clearAuthMarker()` — write/clear a non-sensitive `curapi_authed=1` cookie scoped to the registrable parent domain (e.g. `.curapi.subsage.top`), 7-day Max-Age, SameSite=Lax, Secure on https. Landing site reads this to flip "登录 / 获取 API Key" → "控制台" | Domain derived from `window.location.hostname` by dropping the leftmost label; localhost / IP / single-label hosts stay host-only |
+| `web/classic/src/hooks/common/useHeaderBar.js` | Active logout: call `clearAuthMarker()` after `localStorage.removeItem('user')` | landing must not show "控制台" after a real logout |
+| `web/classic/src/helpers/utils.jsx` | 401-interceptor logout (the auto kick when a request comes back unauthorized): also call `clearAuthMarker()` | covers expired-session edge case |
+| `web/classic/src/helpers/api.js` | OAuth re-login flow that calls `prepareOAuthState({ shouldLogout: true })`: also call `clearAuthMarker()` | rarely hit, but the marker must stay in sync with the session |
+| `web/classic/src/components/settings/PersonalSetting.jsx` | Account-self-delete flow: call `clearAuthMarker()` before `navigate('/login')` | account is gone, marker must die with it |
 
 ## Why each change
 
@@ -179,6 +184,37 @@ NewAPI upstream's `/login` and `/register` render the form regardless of
 auth state. A user clicking "获取 API Key" from landing while already
 logged in lands on a dead-end form. We added a `useEffect` in each
 that checks `userState?.user?.id` and `navigate('/console', { replace: true })`.
+
+### Cross-subdomain auth marker cookie (data.js)
+
+**Problem**: Landing site at `curapi.subsage.top` needs to show "控制台 →"
+instead of "登录 / 获取 API Key" when the visitor is already authenticated
+in the console at `api.curapi.subsage.top`. But:
+
+- gin-sessions cookies are host-only (no Domain attribute) — the landing
+  origin literally cannot see them.
+- `localStorage['user']` is per-origin — same problem.
+- CORS + credentialed fetch on every page view would work but requires
+  changing the session cookie to `SameSite=None; Secure` (broader attack
+  surface) and adding a network round-trip with FOUC.
+
+**Solution**: a tiny non-sensitive boolean cookie named `curapi_authed`,
+value `1`, scoped to the registrable parent domain (`.curapi.subsage.top`).
+Written in `setUserData()` (called on login + status refresh), cleared in
+all four logout paths (active logout, 401-auto-kick, OAuth-relogin,
+account-delete). Landing reads it via `document.cookie` in a tiny hook
+(`lib/use-auth-marker.ts`).
+
+**Why this is optimistic**: the cookie can outlive the server session.
+If the session is invalidated server-side but the cookie remains, the
+landing shows "控制台 →", user clicks, NewAPI redirects them to /login.
+Mild but acceptable.
+
+**Domain derivation**: `getMarkerCookieDomain()` reads
+`window.location.hostname` and drops the leftmost label, so
+`api.curapi.subsage.top` → `.curapi.subsage.top`. Localhost / IP / single-
+label hosts get no Domain attr (cookie stays host-only) which still works
+for the dev case where landing + console share `localhost`.
 
 ## Upstream sync workflow
 

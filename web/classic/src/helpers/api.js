@@ -23,6 +23,7 @@ import {
   formatMessageForAPI,
   isValidMessage,
 } from './utils';
+import { clearAuthMarker } from './data';
 import axios from 'axios';
 import { MESSAGE_ROLES } from '../constants/playground.constants';
 
@@ -263,6 +264,7 @@ async function prepareOAuthState(options = {}) {
       await API.get('/api/user/logout', { skipErrorHandler: true });
     } catch (err) {}
     localStorage.removeItem('user');
+    clearAuthMarker();
     updateAPI();
   }
   return await getOAuthState();
