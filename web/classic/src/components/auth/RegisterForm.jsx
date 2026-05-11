@@ -678,7 +678,7 @@ const RegisterForm = () => {
                 <div className='space-y-2 pt-2'>
                   <Button
                     theme='solid'
-                    className='w-full !rounded-full'
+                    className='curapi-brand-btn w-full !rounded-full'
                     type='primary'
                     htmlType='submit'
                     onClick={handleSubmit}

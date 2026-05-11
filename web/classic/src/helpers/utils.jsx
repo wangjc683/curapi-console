@@ -46,15 +46,18 @@ export function isRoot() {
   return user.role >= 100;
 }
 
+// Curapi customization: hardcoded brand fallbacks. We own the brand on this
+// fork; localStorage values from /api/status only override if backend set them.
+// (Classic theme reads these in HeaderLogo, Footer, auth forms, etc.)
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
-  if (!system_name) return 'New API';
+  if (!system_name) return 'Curapi';
   return system_name;
 }
 
 export function getLogo() {
   let logo = localStorage.getItem('logo');
-  if (!logo) return '/logo.png';
+  if (!logo) return '/favicon.svg';
   return logo;
 }
 

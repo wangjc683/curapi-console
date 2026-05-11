@@ -443,15 +443,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             setOpenedKeys(data.openKeys);
           }}
         >
-          {/* 聊天区域 */}
-          {hasSectionVisibleModules('chat') && (
-            <div className='sidebar-section'>
-              {!collapsed && (
-                <div className='sidebar-group-label'>{t('聊天')}</div>
-              )}
-              {chatMenuItems.map((item) => renderSubItem(item))}
-            </div>
-          )}
+          {/* Curapi customization: chat section removed. Curapi positions
+              itself as an API relay for developers — playground + chat
+              features dilute focus. Backend's `chat` module config is now
+              irrelevant; chatMenuItems hook stays in case upstream sync
+              brings something we'd want to revive. */}
 
           {/* 控制台区域 */}
           {hasSectionVisibleModules('console') && (

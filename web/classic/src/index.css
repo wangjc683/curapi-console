@@ -18,6 +18,14 @@
   --sidebar-width: 180px;
   --sidebar-width-collapsed: 60px;
   --sidebar-current-width: var(--sidebar-width);
+
+  /* Curapi customization: brand accent token (yellow-green ≈ #D9FF4B) for
+     hero CTAs (login / register / primary "save" / "create" buttons).
+     Used via `.curapi-brand-btn` below, NOT via Semi primary override —
+     we keep Semi's neutral palette intact so the wider UI stays calm. */
+  --curapi-brand: #d9ff4b;
+  --curapi-brand-foreground: #0a0a0a;
+  --curapi-brand-hover: #c9ec3b;
 }
 
 body.sidebar-collapsed {
@@ -25,10 +33,27 @@ body.sidebar-collapsed {
 }
 
 body {
-  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, 'Microsoft YaHei',
+  /* Curapi customization: system font stack (Apple → HarmonyOS → Microsoft
+     YaHei → web safe fallback). Drops Lato webfont dependency. */
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'HarmonyOS Sans', 'Microsoft YaHei', 'Helvetica Neue', system-ui,
     sans-serif;
   color: var(--semi-color-text-0);
   background-color: var(--semi-color-bg-0);
+}
+
+/* Curapi brand button — applies on top of Semi `<Button theme='solid'>`.
+   Uses !important to win against Semi inline styles. */
+.curapi-brand-btn,
+.curapi-brand-btn:focus {
+  background-color: var(--curapi-brand) !important;
+  color: var(--curapi-brand-foreground) !important;
+  border-color: var(--curapi-brand) !important;
+}
+.curapi-brand-btn:hover,
+.curapi-brand-btn:active {
+  background-color: var(--curapi-brand-hover) !important;
+  border-color: var(--curapi-brand-hover) !important;
 }
 
 /* 桌面端禁止 body 纵向滚动 - 防止 VChart tooltip 触发页面滚动条 */
