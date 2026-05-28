@@ -8,13 +8,14 @@ marketing repo for the strategy pivot rationale.
 
 **Working branch**: `curapi/customizations` (push here, not main)
 
-**Upstream parent**: NewAPI `d146e45e`. The earlier `web/default/`
+**Original upstream parent**: NewAPI `d146e45e`. The earlier `web/default/`
 customizations (5a6805b4 → c84fac0c, 12 commits) were reverted by `a98c1045`,
 which is the parent of this classic-track work.
 
-**Current HEAD**: `ab7c5184` Unify brand with marketing + intelligent auth redirect.
-10 commits of classic-track customizations on top of the revert. Full commit list
-in the marketing repo's `docs/v0.1-deployment.md`.
+**Last upstream sync**: merged NewAPI `v1.0.0-rc.10` into
+`curapi/customizations` at `f82113c44` on 2026-05-28. Full operations log and
+server smoke results live in the marketing repo's
+`docs/v0.1-deployment.md`.
 
 ## Modified files
 
@@ -218,30 +219,60 @@ for the dev case where landing + console share `localhost`.
 
 ## Upstream sync workflow
 
+Prefer syncing to a tagged upstream release first, not raw `upstream/main`.
+For the 2026-05-28 sync, `upstream/main` was only one commit past
+`v1.0.0-rc.10`, but the release tag had a changelog and a clearer rollback
+boundary.
+
 ```bash
-# 1. Fetch latest upstream
-git fetch upstream
+# 1. Fetch latest upstream refs and tags.
+git fetch upstream --tags --prune
+git fetch origin --prune
 
-# 2. Create a sync branch off our customizations
-git checkout -b sync/upstream-$(date +%Y%m%d) curapi/customizations
-git merge upstream/main
+# 2. Create a sync branch off our customization branch.
+git switch -c sync/newapi-rc10-$(date +%Y%m%d) curapi/customizations
 
-# 3. Resolve conflicts file-by-file:
+# 3. Merge the upstream release tag. Do not rebase.
+git merge --no-ff --no-edit v1.0.0-rc.10
+
+# 4. Resolve conflicts file-by-file:
 #    - All files in the table above: review the upstream diff. If the
 #      upstream change is in code we didn't touch, accept. If it touches
 #      a Curapi-specific line, prefer 'ours' and re-apply our intent.
 #    - For all other unconflicted upstream changes: accept.
 
-# 4. Build to verify nothing broke:
-docker build -t curapi-test .
-# OR locally:
-#   cd web/classic && bun install && bun run build
+# 5. Inspect overlap with Curapi custom files.
+base=$(git merge-base curapi/customizations v1.0.0-rc.10)
+comm -12 \
+  <(git diff --name-only "$base"..v1.0.0-rc.10 | sort) \
+  <(git diff --name-only "$base"..curapi/customizations | sort)
 
-# 5. If clean, fast-forward customizations:
+# 6. If clean, fast-forward customizations and push.
 git checkout curapi/customizations
-git merge sync/upstream-YYYYMMDD
+git merge --ff-only sync/newapi-rc10-YYYYMMDD
 git push origin curapi/customizations
 ```
+
+Why **merge, not rebase**: this branch contains an abandoned `web/default`
+customization track followed by a revert. Rebasing would replay obsolete
+experiments and create avoidable conflict/risk. A merge preserves the real
+history and keeps Curapi's active classic-track intent intact.
+
+Expected conflict surface is usually small. In the `v1.0.0-rc.10` sync, the
+merge had no conflicts; only four Curapi-touched classic files overlapped with
+upstream changes:
+
+- `web/classic/src/components/layout/Footer.jsx`
+- `web/classic/src/components/topup/RechargeCard.jsx`
+- `web/classic/src/i18n/locales/en.json`
+- `web/classic/src/i18n/locales/zh.json`
+
+Run Go tests only after frontends are built, or use Docker. The root package
+embeds `web/default/dist` and `web/classic/dist`, so plain `go test ./...`
+from a clean checkout can fail before backend tests start. On 2026-05-28,
+several upstream test packages were also red on pure `upstream/main`, so treat
+test failures as signals to compare against upstream before attributing them
+to Curapi.
 
 ## Production rebuild
 
@@ -250,8 +281,22 @@ After pushing a commit to `curapi/customizations`:
 ```bash
 ssh root@185.200.65.138
 cd /root/docker/curapi-console
+
+# Backup SQLite first. Keep the backup beside the live DB for quick rollback.
+ts=$(date +%Y%m%d_%H%M%S)
+cp -a data/one-api.db data/one-api.db.bak.$ts
+
+# Pin classic explicitly. Some historical DB state contains
+# theme={"frontend":"default"}; the split key makes the new config loader keep
+# classic even if upstream changes theme sync behavior.
+sqlite3 data/one-api.db \
+  "INSERT OR REPLACE INTO options (key, value) VALUES ('theme.frontend', 'classic');"
+
 docker compose up -d --build       # re-clones git context, fresh build
-docker logs curapi-console -f      # watch startup
+docker logs --tail 100 curapi-console
+docker ps --filter name=curapi-console
+docker exec curapi-console wget -q -O - http://localhost:3000/api/status
+curl -s https://api.curapi.subsage.top/api/status | python3 -m json.tool | head -30
 ```
 
 Build time: ~5-10 min (multi-stage: bun frontend + Go backend + debian runtime).
@@ -265,3 +310,16 @@ build:
 
 So pushing a commit to `origin/curapi/customizations` is enough — no separate
 image registry needed.
+
+After a successful build, reclaim VPS disk space:
+
+```bash
+docker builder prune -af
+docker image prune -f
+rm -f /root/docker/curapi-console/build.log /root/docker/curapi-console/build2.log
+docker system df
+df -h /
+```
+
+The 2026-05-28 sync reclaimed about 10 GB, mostly Docker build cache, while the
+running `curapi-console:latest` image and SQLite backup were preserved.
